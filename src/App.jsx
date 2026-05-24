@@ -611,7 +611,7 @@ function App() {
             <AdBanner slotId="top-banner-ad" />
           </div>
 
-          <header className="text-center py-6">
+          <header className="text-center py-6 relative z-20">
             <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-emerald-400 to-blue-400 bg-clip-text text-transparent mb-4">
               ✨ AI 神級去背神器
             </h1>
@@ -620,24 +620,48 @@ function App() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 mb-8">
-              <button 
-                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, '_blank')}
+              {/* 💎 修正：FB 與 LINE 換成原生 a 標籤避免瀏覽器阻擋 */}
+              <a 
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-4 py-2 bg-[#1877F2]/20 border border-[#1877F2]/50 text-[#1877F2] hover:bg-[#1877F2] hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 分享到 FB
-              </button>
-              <button 
-                onClick={() => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(siteUrl)}`, '_blank')}
+              </a>
+              <a 
+                href={`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(siteUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-4 py-2 bg-[#06C755]/20 border border-[#06C755]/50 text-[#06C755] hover:bg-[#06C755] hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.55 8.845 8.365 9.582.327.071.773.226.887.514.103.262.066.671.031.933-.04.303-.258 1.547-.314 1.828-.068.341.31.336.561.168.21-.137 1.957-1.42 2.682-1.983.3-.232.735-.411 1.258-.465h.005c.835.127 1.704.195 2.593.195 6.617 0 12-4.369 12-9.738zm-15.011 3.09c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.388h2.326c.295 0 .533.238.533.533s-.238.533-.533.533h-2.86zm5.836 0c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.921c0 .295-.238.533-.533.533zm3.766 0c-.295 0-.533-.238-.533-.533v-2.31l-2.072 2.709c-.066.086-.166.134-.27.134-.012 0-.024-.001-.036-.002-.116-.011-.219-.079-.272-.181-.052-.102-.057-.223-.012-.33l.01-.023v-2.852c0-.295.238-.533.533-.533s.533.238.533.533v2.31l2.072-2.709c.066-.086.166-.134.27-.134.012 0 .024.001.036.002.116.011.219.079.272.181.052.102.057.223.012.33l-.01.023v2.852c0 .295-.238.533-.533.533z"/></svg>
                 分享到 LINE
-              </button>
+              </a>
+              {/* 💎 修正：加入 try/catch Fallback，防止在 HTTP 本地端測試時出錯罷工 */}
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(siteUrl);
-                  alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                  try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                      navigator.clipboard.writeText(siteUrl);
+                      alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                    } else {
+                      const textArea = document.createElement("textarea");
+                      textArea.value = siteUrl;
+                      textArea.style.position = "fixed";
+                      textArea.style.left = "-999999px";
+                      textArea.style.top = "-999999px";
+                      document.body.appendChild(textArea);
+                      textArea.focus();
+                      textArea.select();
+                      document.execCommand('copy');
+                      textArea.remove();
+                      alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                    }
+                  } catch (err) {
+                    alert('❌ 複製失敗，請手動複製網址: ' + siteUrl);
+                  }
                 }}
                 className="px-4 py-2 bg-slate-700/50 border border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
               >
@@ -867,7 +891,7 @@ function App() {
                                 {/* 上層 (被裁切)：原始圖 (有背景，Before) */}
                                 <div
                                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                                  style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }} // 💎 修正：改成從左邊(Left)裁切
+                                  style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }} 
                                 >
                                   <img
                                     src={activeImage.originalUrl}
