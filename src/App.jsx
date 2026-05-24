@@ -41,7 +41,6 @@ function App() {
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [brushSize, setBrushSize] = useState(40);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [eraserHistory, setEraserHistory] = useState([]);
   const eraserCanvasRef = useRef(null);
 
   const modelRef = useRef(null);
@@ -56,7 +55,6 @@ function App() {
   // =========================
   useEffect(() => {
     setIsEraserMode(false);
-    setEraserHistory([]);
   }, [activeImageId]);
 
   // =========================
@@ -269,7 +267,13 @@ function App() {
         const result = await runBackgroundRemoval(target.originalUrl);
         setImages(prev =>
           prev.map(img =>
-            img.id === target.id ? { ...img, status: 'done', processedUrl: result } : img
+            img.id === target.id ? { 
+              ...img, 
+              status: 'done', 
+              processedUrl: result,
+              aiProcessedUrl: result,      // 💎 新增：儲存最純淨的 AI 結果
+              eraserHistory: [result]      // 💎 新增：為每張圖片獨立儲存歷史紀錄
+            } : img
           )
         );
       } catch (err) {
@@ -306,6 +310,8 @@ function App() {
       file,
       originalUrl: URL.createObjectURL(file),
       processedUrl: null,
+      aiProcessedUrl: null,
+      eraserHistory: [],
       status: 'pending',
       name: file.name,
       bgColor: 'transparent',
@@ -398,12 +404,11 @@ function App() {
       img.onload = () => {
         canvas.width = img.width;
         canvas.height = img.height;
-        // 💎 BUG 修復：確保畫布一開始是用「正常繪製模式」把圖片放上去
         ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        
-        setEraserHistory([activeImage.processedUrl]);
       };
+      // 載入當前最新進度 (包含過去的擦除紀錄)
       img.src = activeImage.processedUrl;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -427,7 +432,6 @@ function App() {
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    // 切換成「挖空/橡皮擦模式」
     ctx.globalCompositeOperation = 'destination-out'; 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -450,7 +454,7 @@ function App() {
     ctx.stroke();
   };
 
-  // 4. 停止畫 (滑鼠放開) 並儲存狀態
+  // 4. 停止畫 (滑鼠放開) 並儲存狀態到該圖片的紀錄中
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
@@ -459,25 +463,27 @@ function App() {
       const newUrl = canvas.toDataURL('image/png');
       setImages(prev =>
         prev.map(img =>
-          img.id === activeImage.id ? { ...img, processedUrl: newUrl } : img
+          img.id === activeImage.id ? { 
+            ...img, 
+            processedUrl: newUrl,
+            eraserHistory: [...(img.eraserHistory || []), newUrl]
+          } : img
         )
       );
-      setEraserHistory(prev => [...prev, newUrl]);
     }
   };
 
-  // 💎 5. 復原上一步 (Undo) 邏輯 - 修復版
+  // 5. 復原上一步 (Undo)
   const handleUndo = () => {
-    if (eraserHistory.length <= 1) return; 
+    if (!activeImage || !activeImage.eraserHistory || activeImage.eraserHistory.length <= 1) return; 
     
-    const newHistory = [...eraserHistory];
+    const newHistory = [...activeImage.eraserHistory];
     newHistory.pop(); 
     const previousUrl = newHistory[newHistory.length - 1]; 
-    setEraserHistory(newHistory);
     
     setImages(prev =>
       prev.map(img =>
-        img.id === activeImage?.id ? { ...img, processedUrl: previousUrl } : img
+        img.id === activeImage.id ? { ...img, processedUrl: previousUrl, eraserHistory: newHistory } : img
       )
     );
     
@@ -486,12 +492,38 @@ function App() {
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.onload = () => {
-        // 💎 BUG 修復關鍵：一定要把畫筆切回「正常模式」，否則 drawImage 會變成透明挖空！
         ctx.globalCompositeOperation = 'source-over';
         ctx.clearRect(0, 0, canvas.width, canvas.height); 
         ctx.drawImage(img, 0, 0); 
       };
       img.src = previousUrl;
+    }
+  };
+
+  // 💎 6. 一鍵重置 (回到 AI 初始去背狀態)
+  const handleResetEraser = () => {
+    if (!activeImage || !activeImage.aiProcessedUrl) return;
+
+    setImages(prev =>
+      prev.map(img =>
+        img.id === activeImage.id ? { 
+          ...img, 
+          processedUrl: img.aiProcessedUrl, 
+          eraserHistory: [img.aiProcessedUrl] 
+        } : img
+      )
+    );
+
+    const canvas = eraserCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
+        ctx.drawImage(img, 0, 0); 
+      };
+      img.src = activeImage.aiProcessedUrl;
     }
   };
 
@@ -754,18 +786,34 @@ function App() {
                                   </div>
                                   <div className="h-6 w-px bg-slate-700"></div>
                                   
+                                  {/* 💎 一鍵還原按鈕 */}
+                                  <button 
+                                    onClick={handleResetEraser}
+                                    disabled={!activeImage || !activeImage.eraserHistory || activeImage.eraserHistory.length <= 1}
+                                    className={`px-3 py-1.5 text-sm font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                                      activeImage?.eraserHistory?.length > 1 
+                                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/40 border border-red-500/50' 
+                                        : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+                                    }`}
+                                    title="回復到 AI 剛去背完的狀態"
+                                  >
+                                    🔄 重置
+                                  </button>
+
                                   {/* 復原按鈕 (Undo) */}
                                   <button 
                                     onClick={handleUndo}
-                                    disabled={eraserHistory.length <= 1}
+                                    disabled={!activeImage || !activeImage.eraserHistory || activeImage.eraserHistory.length <= 1}
                                     className={`px-3 py-1.5 text-sm font-bold rounded-lg transition-colors flex items-center gap-1 ${
-                                      eraserHistory.length > 1 
+                                      activeImage?.eraserHistory?.length > 1 
                                         ? 'bg-slate-700 hover:bg-slate-600 text-white' 
                                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                                     }`}
                                   >
                                     ↩️ 復原
                                   </button>
+
+                                  <div className="h-6 w-px bg-slate-700"></div>
 
                                   <button 
                                     onClick={() => setIsEraserMode(false)}
