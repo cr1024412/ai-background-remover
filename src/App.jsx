@@ -28,6 +28,9 @@ function App() {
 
   const [images, setImages] = useState([]);
   const [activeImageId, setActiveImageId] = useState(null);
+  
+  // 💎 將 activeImage 移到最上方，讓所有的 useEffect 都能提早監聽它的狀態
+  const activeImage = images.find(img => img.id === activeImageId);
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
@@ -51,11 +54,36 @@ function App() {
   const siteUrl = 'https://ai-background-remover-three.vercel.app/';
 
   // =========================
-  // 切換圖片時，自動關閉橡皮擦模式
+  // 💎 動畫觸發引擎：當切換圖片，或當前圖片剛完成去背時觸發
   // =========================
   useEffect(() => {
     setIsEraserMode(false);
-  }, [activeImageId]);
+    
+    // 如果這張圖片是去背完成的狀態，就重置滑桿並啟動揭曉動畫
+    if (activeImage && activeImage.status === 'done') {
+      setSliderPos(0);     // 從 0% (全原圖) 開始
+      setAutoSlider(true); // 啟動自動掃描特效
+    }
+  }, [activeImageId, activeImage?.status]); // 監聽 ID 切換與狀態變化
+
+  // =========================
+  // 💎 60fps 絲滑揭曉特效 (Auto slider animation)
+  // =========================
+  useEffect(() => {
+    if (!autoSlider || isEraserMode) return;
+    
+    const interval = setInterval(() => {
+      setSliderPos(prev => {
+        if (prev >= 100) {
+          setAutoSlider(false); // 跑到 100% 後自動停止，定格在去背成果
+          return 100;
+        }
+        return prev + 1.5; // 動畫推進速度，數字越大越快
+      });
+    }, 16); // 16ms 大約是 60fps，視覺上會非常滑順
+    
+    return () => clearInterval(interval);
+  }, [autoSlider, isEraserMode]);
 
   // =========================
   // 總體進度計算
@@ -86,21 +114,6 @@ function App() {
     { name: '夢幻漸層', value: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)', type: 'gradient' },
     { name: 'IG 漸層', value: 'linear-gradient(135deg,#f093fb 0%,#f5576c 100%)', type: 'gradient' },
   ];
-
-  // =========================
-  // Auto slider animation
-  // =========================
-
-  useEffect(() => {
-    if (!autoSlider || isEraserMode) return;
-    const interval = setInterval(() => {
-      setSliderPos(prev => {
-        if (prev >= 100) return 0;
-        return prev + 1;
-      });
-    }, 35);
-    return () => clearInterval(interval);
-  }, [autoSlider, isEraserMode]);
 
   // =========================
   // Init AI
@@ -271,8 +284,8 @@ function App() {
               ...img, 
               status: 'done', 
               processedUrl: result,
-              aiProcessedUrl: result,      // 💎 新增：儲存最純淨的 AI 結果
-              eraserHistory: [result]      // 💎 新增：為每張圖片獨立儲存歷史紀錄
+              aiProcessedUrl: result,      
+              eraserHistory: [result]      
             } : img
           )
         );
@@ -389,13 +402,10 @@ function App() {
     }
   };
 
-  const activeImage = images.find(img => img.id === activeImageId);
-
   // =========================
   // 🖌️ 橡皮擦 (Eraser) 邏輯區
   // =========================
 
-  // 1. 進入橡皮擦模式時，初始化畫布與歷史紀錄
   useEffect(() => {
     if (isEraserMode && activeImage && activeImage.status === 'done' && eraserCanvasRef.current) {
       const canvas = eraserCanvasRef.current;
@@ -408,13 +418,11 @@ function App() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
-      // 載入當前最新進度 (包含過去的擦除紀錄)
       img.src = activeImage.processedUrl;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEraserMode, activeImage?.id]); 
 
-  // 2. 開始畫 (滑鼠點下)
   const startDrawing = (e) => {
     e.preventDefault();
     setIsDrawing(true);
@@ -437,7 +445,6 @@ function App() {
     ctx.stroke();
   };
 
-  // 3. 畫的過程 (滑鼠拖曳)
   const draw = (e) => {
     if (!isDrawing) return;
     e.preventDefault();
@@ -454,7 +461,6 @@ function App() {
     ctx.stroke();
   };
 
-  // 4. 停止畫 (滑鼠放開) 並儲存狀態到該圖片的紀錄中
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
@@ -473,58 +479,64 @@ function App() {
     }
   };
 
-  // 5. 復原上一步 (Undo)
   const handleUndo = () => {
-    if (!activeImage || !activeImage.eraserHistory || activeImage.eraserHistory.length <= 1) return; 
-    
-    const newHistory = [...activeImage.eraserHistory];
-    newHistory.pop(); 
-    const previousUrl = newHistory[newHistory.length - 1]; 
-    
-    setImages(prev =>
-      prev.map(img =>
+    if (!activeImage) return;
+
+    setImages(prev => {
+      const currentImg = prev.find(img => img.id === activeImage.id);
+      if (!currentImg || !currentImg.eraserHistory || currentImg.eraserHistory.length <= 1) return prev;
+
+      const newHistory = [...currentImg.eraserHistory];
+      newHistory.pop(); 
+      const previousUrl = newHistory[newHistory.length - 1]; 
+
+      const canvas = eraserCanvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.clearRect(0, 0, canvas.width, canvas.height); 
+          ctx.drawImage(img, 0, 0); 
+        };
+        img.src = previousUrl;
+      }
+
+      return prev.map(img =>
         img.id === activeImage.id ? { ...img, processedUrl: previousUrl, eraserHistory: newHistory } : img
-      )
-    );
-    
-    const canvas = eraserCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.onload = () => {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.clearRect(0, 0, canvas.width, canvas.height); 
-        ctx.drawImage(img, 0, 0); 
-      };
-      img.src = previousUrl;
-    }
+      );
+    });
   };
 
-  // 💎 6. 一鍵重置 (回到 AI 初始去背狀態)
   const handleResetEraser = () => {
-    if (!activeImage || !activeImage.aiProcessedUrl) return;
+    if (!activeImage) return;
 
-    setImages(prev =>
-      prev.map(img =>
+    setImages(prev => {
+      const currentImg = prev.find(img => img.id === activeImage.id);
+      if (!currentImg || !currentImg.aiProcessedUrl) return prev;
+
+      const initialUrl = currentImg.aiProcessedUrl;
+
+      const canvas = eraserCanvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.clearRect(0, 0, canvas.width, canvas.height); 
+          ctx.drawImage(img, 0, 0); 
+        };
+        img.src = initialUrl;
+      }
+
+      return prev.map(img =>
         img.id === activeImage.id ? { 
           ...img, 
-          processedUrl: img.aiProcessedUrl, 
-          eraserHistory: [img.aiProcessedUrl] 
+          processedUrl: initialUrl, 
+          eraserHistory: [initialUrl] 
         } : img
-      )
-    );
-
-    const canvas = eraserCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.onload = () => {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.clearRect(0, 0, canvas.width, canvas.height); 
-        ctx.drawImage(img, 0, 0); 
-      };
-      img.src = activeImage.aiProcessedUrl;
-    }
+      );
+    });
   };
 
   const cursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2" style="filter: drop-shadow(0 0 1px black);"/></svg>`;
@@ -786,16 +798,16 @@ function App() {
                                   </div>
                                   <div className="h-6 w-px bg-slate-700"></div>
                                   
-                                  {/* 💎 一鍵還原按鈕 */}
+                                  {/* 一鍵還原按鈕 */}
                                   <button 
                                     onClick={handleResetEraser}
                                     disabled={!activeImage || !activeImage.eraserHistory || activeImage.eraserHistory.length <= 1}
                                     className={`px-3 py-1.5 text-sm font-bold rounded-lg transition-colors flex items-center gap-1 ${
                                       activeImage?.eraserHistory?.length > 1 
-                                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/40 border border-red-500/50' 
+                                        ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 border border-rose-500/50' 
                                         : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
                                     }`}
-                                    title="回復到 AI 剛去背完的狀態"
+                                    title="清除所有橡皮擦紀錄，回到 AI 初始狀態"
                                   >
                                     🔄 重置
                                   </button>
