@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdBanner from './AdBanner';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -390,138 +391,353 @@ function App() {
   const activeImage = images.find(img => img.id === activeImageId);
 
   // =========================
+  // SEO Meta 標籤設定 (react-helmet-async)
+  // =========================
+  const seoTags = (
+    <Helmet>
+      <title>免費 AI 線上去背工具 | 一鍵自動照片去背、免登入精準去白底</title>
+      <meta name="description" content="完全免費、免登入的 AI 線上去背神器！一鍵自動移除圖片背景、精準去白底，完美保留髮絲細節。適合電商商品照、證件照與社群頭貼優化，瀏覽器打開即用。" />
+      <meta name="keywords" content="去背, 線上去背, AI去背, 免費去背, 照片去背, 去白底, background remover, remove bg" />
+      <link rel="canonical" href="https://ai-background-remover-three.vercel.app/" />
+      <meta property="og:title" content="免費 AI 線上去背工具 | 一鍵自動照片去背、免登入精準去白底" />
+      <meta property="og:description" content="完全免費、一鍵自動移除圖片背景！精準去白底，完美保留髮絲細節，瀏覽器打開即用。" />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://ai-background-remover-three.vercel.app/" />
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "免費 AI 線上去背工具",
+          "url": "https://ai-background-remover-three.vercel.app/",
+          "description": "完全免費的 AI 線上去背工具，一鍵自動移除圖片背景、精準去白底。",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "All"
+        })}
+      </script>
+    </Helmet>
+  );
+
+  // =========================
   // Mobile UI
   // =========================
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
-        <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 max-w-md text-center">
-          <div className="text-6xl mb-5">📱</div>
-          <h1 className="text-3xl font-bold text-emerald-400 mb-4">
-            手機版努力優化中～
-          </h1>
-          <p className="text-slate-300 leading-relaxed">
-            目前 AI 去背需要較大的運算空間，<br />
-            建議使用電腦開啟效果更棒唷 ✨
-          </p>
+      <HelmetProvider>
+        {seoTags}
+        <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
+          <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 max-w-md text-center">
+            <div className="text-6xl mb-5">📱</div>
+            <h1 className="text-3xl font-bold text-emerald-400 mb-4">
+              手機版努力優化中～
+            </h1>
+            <p className="text-slate-300 leading-relaxed">
+              目前 AI 去背需要較大的運算空間，<br />
+              建議使用電腦開啟效果更棒唷 ✨
+            </p>
+          </div>
         </div>
-      </div>
+      </HelmetProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 overflow-hidden">
-      <div className="max-w-7xl w-full">
-        
-        {/* 🌟 廣告版位：頂部橫幅 */}
-        <div className="w-full bg-slate-900/40 rounded-xl border border-slate-800/50 mb-4 overflow-hidden">
-          <AdBanner slotId="top-banner-ad" />
-        </div>
+    <HelmetProvider>
+      {seoTags}
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 overflow-hidden">
+        <div className="max-w-7xl w-full">
+          
+          {/* 🌟 廣告版位：頂部橫幅 */}
+          <div className="w-full bg-slate-900/40 rounded-xl border border-slate-800/50 mb-4 overflow-hidden">
+            <AdBanner slotId="top-banner-ad" />
+          </div>
 
-        {/* Header */}
-        <header className="text-center py-6">
-          <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-emerald-400 to-blue-400 bg-clip-text text-transparent mb-4">
-            ✨ AI 神級去背神器
-          </h1>
-          <p className="text-slate-300 text-base md:text-lg mb-6">
-            不用 Photoshop，上傳多張圖片就能在背景默默去背 💖
-          </p>
+          {/* Header */}
+          <header className="text-center py-6">
+            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-emerald-400 to-blue-400 bg-clip-text text-transparent mb-4">
+              ✨ AI 神級去背神器
+            </h1>
+            <p className="text-slate-300 text-base md:text-lg mb-6">
+              不用 Photoshop，上傳多張圖片就能在背景默默去背 💖
+            </p>
 
-          {!ready && !error && (
-            <div className="mt-6 max-w-md mx-auto bg-slate-800/70 p-5 rounded-2xl border border-slate-700">
-              <p className="text-emerald-400 mb-3 font-bold animate-pulse">
-                🧠 AI 魔法師準備中...
-              </p>
-              <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+            {!ready && !error && (
+              <div className="mt-6 max-w-md mx-auto bg-slate-800/70 p-5 rounded-2xl border border-slate-700">
+                <p className="text-emerald-400 mb-3 font-bold animate-pulse">
+                  🧠 AI 魔法師準備中...
+                </p>
+                <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-6 bg-red-900/30 border border-red-700 rounded-2xl p-5 max-w-md mx-auto">
+                ❌ {errorMsg}
+              </div>
+            )}
+          </header>
+
+          {/* ⏳ 全部去背時間進度條 (僅在處理中顯示) */}
+          {totalImages > 0 && !isAllDone && (
+            <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-4 shadow-2xl transition-all">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="font-bold text-sm text-slate-200">⏳ 批次去背總進度</span>
+                </div>
+                <span className="text-xs bg-slate-800 px-2.5 py-1 rounded-md text-emerald-400 font-mono font-bold">
+                  已完成 {doneImagesCount} / 共 {totalImages} 張 ({overallProgress}%)
+                </span>
+              </div>
+              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
                 <div
-                  className="h-3 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
-                  style={{ width: `${downloadProgress}%` }}
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-blue-500 transition-all duration-300 ease-out"
+                  style={{ width: `${overallProgress}%` }}
                 />
               </div>
             </div>
           )}
 
-          {error && (
-            <div className="mt-6 bg-red-900/30 border border-red-700 rounded-2xl p-5 max-w-md mx-auto">
-              ❌ {errorMsg}
+          {/* 🎉 任務完成超巨型廣告看板 (全部完成時彈出) */}
+          {isAllDone && (
+            <div className="w-full bg-slate-900 border-2 border-emerald-500/30 rounded-3xl p-6 md:p-10 mb-8 shadow-[0_0_40px_rgba(52,211,153,0.15)] text-center transition-all">
+              <h2 className="text-3xl md:text-4xl font-black text-emerald-400 mb-3">🎉 批次去背大功告成！</h2>
+              <p className="text-slate-300 text-lg mb-6">所有圖片都已經處理完畢，請點擊下方按鈕打包帶走你的傑作。</p>
+              
+              {/* 🌟 廣告版位：超級放大版廣告專區 */}
+              <div className="w-full bg-slate-950/80 rounded-2xl border border-slate-700/50 p-2 md:p-6 mb-8 min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div className="absolute top-3 left-4 text-[10px] text-slate-500 font-black tracking-widest uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  Sponsor Advertisement
+                </div>
+                <div className="w-full h-full flex items-center justify-center mt-6">
+                  <AdBanner slotId="all-done-massive-ad" />
+                </div>
+              </div>
+              
+              <button
+                onClick={handleDownloadAll}
+                className="px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 font-black text-xl hover:scale-105 hover:shadow-[0_0_30px_rgba(52,211,153,0.4)] transition-all transform shadow-2xl w-full md:w-auto"
+              >
+                📦 立即打包下載全部 ({totalImages} 張)
+              </button>
             </div>
           )}
-        </header>
 
-        {/* ⏳ 全部去背時間進度條 (僅在處理中顯示) */}
-        {totalImages > 0 && !isAllDone && (
-          <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-4 shadow-2xl transition-all">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="font-bold text-sm text-slate-200">⏳ 批次去背總進度</span>
-              </div>
-              <span className="text-xs bg-slate-800 px-2.5 py-1 rounded-md text-emerald-400 font-mono font-bold">
-                已完成 {doneImagesCount} / 共 {totalImages} 張 ({overallProgress}%)
-              </span>
-            </div>
-            <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-blue-500 transition-all duration-300 ease-out"
-                style={{ width: `${overallProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* 🎉 任務完成超巨型廣告看板 (全部完成時彈出) */}
-        {isAllDone && (
-          <div className="w-full bg-slate-900 border-2 border-emerald-500/30 rounded-3xl p-6 md:p-10 mb-8 shadow-[0_0_40px_rgba(52,211,153,0.15)] text-center transition-all">
-            <h2 className="text-3xl md:text-4xl font-black text-emerald-400 mb-3">🎉 批次去背大功告成！</h2>
-            <p className="text-slate-300 text-lg mb-6">所有圖片都已經處理完畢，請點擊下方按鈕打包帶走你的傑作。</p>
-            
-            {/* 🌟 廣告版位：超級放大版廣告專區 */}
-            <div className="w-full bg-slate-950/80 rounded-2xl border border-slate-700/50 p-2 md:p-6 mb-8 min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden group hover:border-slate-600 transition-colors">
-              <div className="absolute top-3 left-4 text-[10px] text-slate-500 font-black tracking-widest uppercase flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                Sponsor Advertisement
-              </div>
-              <div className="w-full h-full flex items-center justify-center mt-6">
-                <AdBanner slotId="all-done-massive-ad" />
-              </div>
-            </div>
-            
-            <button
-              onClick={handleDownloadAll}
-              className="px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 font-black text-xl hover:scale-105 hover:shadow-[0_0_30px_rgba(52,211,153,0.4)] transition-all transform shadow-2xl w-full md:w-auto"
+          {/* Main Upload / Editor Area */}
+          <main className="flex flex-col gap-6">
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={`relative min-h-[520px] rounded-3xl border-2 transition-all overflow-hidden ${
+                isDragging
+                  ? 'border-emerald-400 bg-emerald-500/10 scale-[1.01]'
+                  : 'border-slate-700 bg-slate-900/60'
+              }`}
             >
-              📦 立即打包下載全部 ({totalImages} 張)
-            </button>
-          </div>
-        )}
-
-        {/* Main Upload / Editor Area */}
-        <main className="flex flex-col gap-6">
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={`relative min-h-[520px] rounded-3xl border-2 transition-all overflow-hidden ${
-              isDragging
-                ? 'border-emerald-400 bg-emerald-500/10 scale-[1.01]'
-                : 'border-slate-700 bg-slate-900/60'
-            }`}
-          >
-            {images.length === 0 ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-                <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-4xl mb-6">
-                  ✨
+              {images.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                  <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-4xl mb-6">
+                    ✨
+                  </div>
+                  <h2 className="text-4xl font-black mb-3">把圖片丟進來吧！</h2>
+                  <p className="text-slate-400 mb-8 text-lg">
+                    AI 會幫你自動去背～ 支援一次放多張超方便 💖
+                  </p>
+                  <label className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:scale-105 transition-transform cursor-pointer font-bold text-lg shadow-2xl">
+                    📂 選擇圖片
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-                <h2 className="text-4xl font-black mb-3">把圖片丟進來吧！</h2>
-                <p className="text-slate-400 mb-8 text-lg">
-                  AI 會幫你自動去背～ 支援一次放多張超方便 💖
-                </p>
-                <label className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:scale-105 transition-transform cursor-pointer font-bold text-lg shadow-2xl">
-                  📂 選擇圖片
+              ) : (
+                activeImage && (
+                  <div className="absolute inset-0 flex flex-col">
+                    {/* Top Bar */}
+                    <div className="h-16 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between px-5">
+                      <div className="flex items-center gap-3">
+                        <span className="bg-slate-800 px-4 py-2 rounded-xl text-sm truncate max-w-[220px]">
+                          {activeImage.name}
+                        </span>
+                        {activeImage.status === 'processing' && (
+                          <span className="text-emerald-400 animate-pulse font-bold">
+                            ✨ 處理中...{processProgress}%
+                          </span>
+                        )}
+                      </div>
+
+                      {activeImage.status === 'done' && (
+                        <div className="flex gap-2">
+                          {backgroundTemplates.map(bg => (
+                            <button
+                              key={bg.name}
+                              onClick={() => updateActiveBgColor(bg.value)}
+                              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-105 ${
+                                activeImage.bgColor === bg.value
+                                  ? 'border-emerald-400 scale-105'
+                                  : 'border-slate-700'
+                              }`}
+                              style={{ background: bg.value }}
+                            >
+                              <span className="mix-blend-difference text-white">
+                                {bg.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preview Content */}
+                    <div
+                      className="flex-1 relative flex items-center justify-center overflow-hidden"
+                      style={getBackgroundStyle(activeImage.bgColor)}
+                    >
+                      {activeImage.status === 'done' ? (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          
+                          {/* ⬅️ 去背前後文字標註 */}
+                          <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-sm text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold pointer-events-none border border-slate-700 shadow-md">
+                            ⬅️ 去背前 (原圖)
+                          </div>
+                          <div className="absolute top-4 right-4 z-10 bg-emerald-500/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-bold pointer-events-none shadow-lg">
+                            去背後 (成果) ➡️
+                          </div>
+
+                          <img
+                            src={activeImage.processedUrl}
+                            className="absolute max-w-[90%] max-h-[90%] object-contain drop-shadow-2xl"
+                            alt={`去背完成成果 - ${activeImage.name}`}
+                          />
+                          <div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{
+                              clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                            }}
+                          >
+                            <img
+                              src={activeImage.originalUrl}
+                              className="absolute max-w-[90%] max-h-[90%] object-contain"
+                              alt={`去背前原圖 - ${activeImage.name}`}
+                            />
+                          </div>
+                          <div
+                            className="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                            style={{ left: `${sliderPos}%` }}
+                          />
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={sliderPos}
+                            onChange={e => {
+                              setAutoSlider(false);
+                              setSliderPos(e.target.value);
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-ew-resize"
+                            title="拖曳以比較去背前後差異"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-6 w-full max-w-xl">
+                          <img
+                            src={activeImage.originalUrl}
+                            className="max-w-[60%] max-h-[220px] object-contain opacity-40 rounded-xl mb-4"
+                            alt={`等待處理圖片預覽 - ${activeImage.name}`}
+                          />
+                          
+                          {activeImage.status === 'processing' && (
+                            <div className="text-center w-full bg-slate-950/80 p-5 rounded-2xl border border-slate-800 shadow-inner flex flex-col items-center">
+                              <div className="w-12 h-12 border-4 border-slate-800 border-t-emerald-400 rounded-full animate-spin mb-3" />
+                              <p className="text-lg font-bold text-emerald-400 animate-pulse">
+                                {processStep} ({processProgress}%)
+                              </p>
+                            </div>
+                          )}
+                          
+                          {activeImage.status === 'pending' && (
+                            <div className="text-center bg-slate-950/40 px-6 py-3 rounded-xl border border-slate-800 text-slate-400 text-sm">
+                              ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Actions */}
+                    {activeImage.status === 'done' && (
+                      <div className="p-5 border-t border-slate-800 bg-slate-900/80 flex justify-center gap-4">
+                        <button
+                          onClick={() => handleCopy(activeImage)}
+                          className="px-6 py-3 rounded-2xl bg-slate-700 hover:bg-slate-600 font-bold transition-all hover:scale-105"
+                        >
+                          📋 複製圖片
+                        </button>
+                        <button
+                          onClick={() => handleDownloadSingle(activeImage)}
+                          className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 font-black hover:scale-105 transition-all shadow-2xl"
+                        >
+                          ⬇️ 保存圖片
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Bottom Gallery Grid */}
+            {images.length > 0 && (
+              <div className="bg-slate-900/70 border border-slate-700 rounded-3xl p-4 overflow-x-auto flex gap-4 items-center">
+                {images.map(img => (
+                  <div
+                    key={img.id}
+                    onClick={() => setActiveImageId(img.id)}
+                    className={`relative h-24 w-24 rounded-2xl overflow-hidden cursor-pointer border-2 transition-all flex-shrink-0 ${
+                      activeImageId === img.id
+                        ? 'border-emerald-400 scale-105 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
+                        : 'border-slate-700 opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={img.status === 'done' ? img.processedUrl : img.originalUrl}
+                      className="w-full h-full object-cover"
+                      alt={img.status === 'done' ? `已完成去背縮圖 - ${img.name}` : `排隊中圖片縮圖 - ${img.name}`}
+                    />
+                    {img.status === 'processing' && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                    {img.status === 'pending' && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-xs text-slate-400">
+                        ⏳ 等待
+                      </div>
+                    )}
+                    {img.status === 'done' && (
+                      <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <label className="h-24 w-24 rounded-2xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors flex-shrink-0">
+                  <div className="text-2xl">➕</div>
+                  <div className="text-[11px] mt-1 text-slate-400">加入更多</div>
                   <input
                     type="file"
                     multiple
@@ -530,204 +746,26 @@ function App() {
                     className="hidden"
                   />
                 </label>
-              </div>
-            ) : (
-              activeImage && (
-                <div className="absolute inset-0 flex flex-col">
-                  {/* Top Bar */}
-                  <div className="h-16 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between px-5">
-                    <div className="flex items-center gap-3">
-                      <span className="bg-slate-800 px-4 py-2 rounded-xl text-sm truncate max-w-[220px]">
-                        {activeImage.name}
-                      </span>
-                      {activeImage.status === 'processing' && (
-                        <span className="text-emerald-400 animate-pulse font-bold">
-                          ✨ 處理中...{processProgress}%
-                        </span>
-                      )}
-                    </div>
-
-                    {activeImage.status === 'done' && (
-                      <div className="flex gap-2">
-                        {backgroundTemplates.map(bg => (
-                          <button
-                            key={bg.name}
-                            onClick={() => updateActiveBgColor(bg.value)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-105 ${
-                              activeImage.bgColor === bg.value
-                                ? 'border-emerald-400 scale-105'
-                                : 'border-slate-700'
-                            }`}
-                            style={{ background: bg.value }}
-                          >
-                            <span className="mix-blend-difference text-white">
-                              {bg.name}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Preview Content */}
-                  {/* 🛠️ 修改：應用 getBackgroundStyle 函數 */}
-                  <div
-                    className="flex-1 relative flex items-center justify-center overflow-hidden"
-                    style={getBackgroundStyle(activeImage.bgColor)}
+                
+                {!isAllDone && (
+                  <button
+                    onClick={handleDownloadAll}
+                    className="ml-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 font-black hover:scale-105 transition-all shadow-2xl flex-shrink-0"
                   >
-                    {activeImage.status === 'done' ? (
-                      <div className="relative w-full h-full flex items-center justify-center">
-                        
-                        {/* ⬅️ 去背前後文字標註 */}
-                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-sm text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold pointer-events-none border border-slate-700 shadow-md">
-                          ⬅️ 去背前 (原圖)
-                        </div>
-                        <div className="absolute top-4 right-4 z-10 bg-emerald-500/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-bold pointer-events-none shadow-lg">
-                          去背後 (成果) ➡️
-                        </div>
-
-                        <img
-                          src={activeImage.processedUrl}
-                          className="absolute max-w-[90%] max-h-[90%] object-contain drop-shadow-2xl"
-                        />
-                        <div
-                          className="absolute inset-0 flex items-center justify-center"
-                          style={{
-                            clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                          }}
-                        >
-                          <img
-                            src={activeImage.originalUrl}
-                            className="absolute max-w-[90%] max-h-[90%] object-contain"
-                          />
-                        </div>
-                        <div
-                          className="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                          style={{ left: `${sliderPos}%` }}
-                        />
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={sliderPos}
-                          onChange={e => {
-                            setAutoSlider(false);
-                            setSliderPos(e.target.value);
-                          }}
-                          className="absolute inset-0 opacity-0 cursor-ew-resize"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center p-6 w-full max-w-xl">
-                        <img
-                          src={activeImage.originalUrl}
-                          className="max-w-[60%] max-h-[220px] object-contain opacity-40 rounded-xl mb-4"
-                        />
-                        
-                        {activeImage.status === 'processing' && (
-                          <div className="text-center w-full bg-slate-950/80 p-5 rounded-2xl border border-slate-800 shadow-inner flex flex-col items-center">
-                            <div className="w-12 h-12 border-4 border-slate-800 border-t-emerald-400 rounded-full animate-spin mb-3" />
-                            <p className="text-lg font-bold text-emerald-400 animate-pulse">
-                              {processStep} ({processProgress}%)
-                            </p>
-                          </div>
-                        )}
-                        
-                        {activeImage.status === 'pending' && (
-                          <div className="text-center bg-slate-950/40 px-6 py-3 rounded-xl border border-slate-800 text-slate-400 text-sm">
-                            ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Actions */}
-                  {activeImage.status === 'done' && (
-                    <div className="p-5 border-t border-slate-800 bg-slate-900/80 flex justify-center gap-4">
-                      <button
-                        onClick={() => handleCopy(activeImage)}
-                        className="px-6 py-3 rounded-2xl bg-slate-700 hover:bg-slate-600 font-bold transition-all hover:scale-105"
-                      >
-                        📋 複製圖片
-                      </button>
-                      <button
-                        onClick={() => handleDownloadSingle(activeImage)}
-                        className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 font-black hover:scale-105 transition-all shadow-2xl"
-                      >
-                        ⬇️ 保存圖片
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
+                    📦 打包下載
+                  </button>
+                )}
+              </div>
             )}
+          </main>
+
+          {/* 🌟 廣告版位：網頁底部壓軸橫幅 */}
+          <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
+            <AdBanner slotId="bottom-banner-ad" />
           </div>
-
-          {/* Bottom Gallery Grid */}
-          {images.length > 0 && (
-            <div className="bg-slate-900/70 border border-slate-700 rounded-3xl p-4 overflow-x-auto flex gap-4 items-center">
-              {images.map(img => (
-                <div
-                  key={img.id}
-                  onClick={() => setActiveImageId(img.id)}
-                  className={`relative h-24 w-24 rounded-2xl overflow-hidden cursor-pointer border-2 transition-all flex-shrink-0 ${
-                    activeImageId === img.id
-                      ? 'border-emerald-400 scale-105 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
-                      : 'border-slate-700 opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  <img
-                    src={img.status === 'done' ? img.processedUrl : img.originalUrl}
-                    className="w-full h-full object-cover"
-                  />
-                  {img.status === 'processing' && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                  {img.status === 'pending' && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-xs text-slate-400">
-                      ⏳ 等待
-                    </div>
-                  )}
-                  {img.status === 'done' && (
-                    <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
-                      ✓
-                    </div>
-                  )}
-                </div>
-              ))}
-              <label className="h-24 w-24 rounded-2xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors flex-shrink-0">
-                <div className="text-2xl">➕</div>
-                <div className="text-[11px] mt-1 text-slate-400">加入更多</div>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              
-              {!isAllDone && (
-                <button
-                  onClick={handleDownloadAll}
-                  className="ml-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 font-black hover:scale-105 transition-all shadow-2xl flex-shrink-0"
-                >
-                  📦 打包下載
-                </button>
-              )}
-            </div>
-          )}
-        </main>
-
-        {/* 🌟 廣告版位：網頁底部壓軸橫幅 */}
-        <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
-          <AdBanner slotId="bottom-banner-ad" />
         </div>
       </div>
-    </div>
+    </HelmetProvider>
   );
 }
 
