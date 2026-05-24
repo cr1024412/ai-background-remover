@@ -106,7 +106,11 @@ function App() {
         env.allowRemoteModels = true;
         env.allowLocalModels = false;
         env.backends.onnx.wasm.numThreads = 4;
-        env.backends.onnx.wasm.proxy = false;
+        
+        // 💎 核心修復：強制開啟 Web Worker (proxy=true) 
+        // 這樣 AI 運算就會在背景執行，完全不會卡住使用者的操作畫面！
+        env.backends.onnx.wasm.proxy = true; 
+        
         env.backends.onnx.wasm.wasmPaths =
           'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/';
 
@@ -179,13 +183,17 @@ function App() {
       const img = new Image();
       img.src = imgUrl;
 
-      img.onload = () => {
+      img.onload = async () => {
         try {
           ctx.drawImage(img, 0, 0);
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imgData.data;
 
           for (let y = 0; y < canvas.height; y++) {
+            // 💎 核心修復：每處理 50 行像素，強迫瀏覽器休息 1 毫秒
+            // 這能確保遇到超大圖片時，網頁依舊滑順不卡頓
+            if (y % 50 === 0) await yieldToBrowser(1); 
+            
             for (let x = 0; x < canvas.width; x++) {
               const imgIndex = (y * canvas.width + x) * 4;
               const maskX = Math.floor(x * (maskWidth / canvas.width));
@@ -231,6 +239,10 @@ function App() {
         )
       );
 
+      // 💎 核心修復：給予瀏覽器 300 毫秒的緩衝時間
+      // 確保使用者的「點擊事件」能在切換圖片的縫隙中完美觸發
+      await new Promise(r => setTimeout(r, 300));
+
       try {
         const result = await runBackgroundRemoval(target.originalUrl);
         setImages(prev =>
@@ -245,7 +257,7 @@ function App() {
             img.id === target.id ? { ...img, status: 'error' } : img
           )
         );
-      } {
+      } finally {
         setIsProcessingQueue(false);
         setProcessProgress(0); 
       }
@@ -447,7 +459,6 @@ function App() {
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 overflow-hidden">
         <div className="max-w-7xl w-full">
           
-          {/* 🌟 廣告版位：頂部橫幅 */}
           <div className="w-full bg-slate-900/40 rounded-xl border border-slate-800/50 mb-4 overflow-hidden">
             <AdBanner slotId="top-banner-ad" />
           </div>
@@ -482,7 +493,7 @@ function App() {
             )}
           </header>
 
-          {/* ⏳ 全部去背時間進度條 (僅在處理中顯示) */}
+          {/* ⏳ 全部去背時間進度條 */}
           {totalImages > 0 && !isAllDone && (
             <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-4 shadow-2xl transition-all">
               <div className="flex justify-between items-center mb-2">
@@ -506,13 +517,12 @@ function App() {
             </div>
           )}
 
-          {/* 🎉 任務完成超巨型廣告看板 (全部完成時彈出) */}
+          {/* 🎉 任務完成超巨型廣告看板 */}
           {isAllDone && (
             <div className="w-full bg-slate-900 border-2 border-emerald-500/30 rounded-3xl p-6 md:p-10 mb-8 shadow-[0_0_40px_rgba(52,211,153,0.15)] text-center transition-all">
               <h2 className="text-3xl md:text-4xl font-black text-emerald-400 mb-3">🎉 批次去背大功告成！</h2>
               <p className="text-slate-300 text-lg mb-6">所有圖片都已經處理完畢，請點擊下方按鈕打包帶走你的傑作。</p>
               
-              {/* 🌟 廣告版位：超級放大版廣告專區 */}
               <div className="w-full bg-slate-950/80 rounded-2xl border border-slate-700/50 p-2 md:p-6 mb-8 min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden group hover:border-slate-600 transition-colors">
                 <div className="absolute top-3 left-4 text-[10px] text-slate-500 font-black tracking-widest uppercase flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
@@ -609,8 +619,6 @@ function App() {
                     >
                       {activeImage.status === 'done' ? (
                         <div className="relative w-full h-full flex items-center justify-center">
-                          
-                          {/* ⬅️ 去背前後文字標註 */}
                           <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-sm text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold pointer-events-none border border-slate-700 shadow-md">
                             ⬅️ 去背前 (原圖)
                           </div>
@@ -625,9 +633,7 @@ function App() {
                           />
                           <div
                             className="absolute inset-0 flex items-center justify-center"
-                            style={{
-                              clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                            }}
+                            style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
                           >
                             <img
                               src={activeImage.originalUrl}
@@ -661,19 +667,43 @@ function App() {
                           />
                           
                           {activeImage.status === 'processing' && (
-                            <div className="text-center w-full bg-slate-950/80 p-5 rounded-2xl border border-slate-800 shadow-inner flex flex-col items-center">
-                              <div className="w-12 h-12 border-4 border-slate-800 border-t-emerald-400 rounded-full animate-spin mb-3" />
-                              <p className="text-lg font-bold text-emerald-400 animate-pulse">
-                                {processStep} ({processProgress}%)
+                            <div className="relative w-full max-w-sm bg-slate-900/95 p-6 rounded-3xl border border-slate-700/60 shadow-[0_0_40px_rgba(52,211,153,0.15)] flex flex-col items-center backdrop-blur-md overflow-hidden">
+                              <div className="absolute -top-10 -left-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl"></div>
+                              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl"></div>
+
+                              <div className="relative w-16 h-16 flex items-center justify-center mb-4 z-10">
+                                <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
+                                <div className="absolute inset-0 border-4 border-emerald-400 border-t-transparent border-l-transparent rounded-full animate-spin"></div>
+                                <div className="absolute inset-2 border-4 border-cyan-400 border-b-transparent border-r-transparent rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                                <span className="text-2xl animate-pulse">✨</span>
+                              </div>
+
+                              <p className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 animate-pulse mb-5 z-10 text-center tracking-wide">
+                                {processStep}
                               </p>
+
+                              <div className="w-full z-10">
+                                <div className="flex justify-between text-[11px] text-slate-400 font-bold mb-2 px-1">
+                                  <span className="tracking-widest uppercase">Processing</span>
+                                  <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]">{processProgress}%</span>
+                                </div>
+                                <div className="w-full h-2.5 bg-slate-800/80 rounded-full overflow-hidden shadow-inner border border-slate-700/50">
+                                  <div 
+                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400 relative transition-all duration-300 ease-out"
+                                    style={{ width: `${processProgress}%` }}
+                                  >
+                                    <div className="absolute top-0 bottom-0 right-0 w-20 bg-gradient-to-r from-transparent to-white/40"></div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           )}
                           
-                          {activeImage.status === 'pending' && (
-                            <div className="text-center bg-slate-950/40 px-6 py-3 rounded-xl border border-slate-800 text-slate-400 text-sm">
-                              ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
+                             {activeImage.status === 'pending' && (
+                           <div className="text-center bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-xl border border-slate-600 text-slate-100 text-sm font-bold shadow-[0_0_15px_rgba(0,0,0,0.5)] tracking-wide">
+                          ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
                             </div>
-                          )}
+                         )}
                         </div>
                       )}
                     </div>
@@ -718,18 +748,24 @@ function App() {
                       className="w-full h-full object-cover"
                       alt={img.status === 'done' ? `已完成去背縮圖 - ${img.name}` : `排隊中圖片縮圖 - ${img.name}`}
                     />
+                    
+                    {/* 💎 核心修復：在下方的列表縮圖直接顯示進度 % 數 */}
                     {img.status === 'processing' && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-[1px]">
+                        <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mb-1.5" />
+                        <span className="text-[11px] text-emerald-400 font-black drop-shadow-md tracking-wider">
+                          {processProgress}%
+                        </span>
                       </div>
                     )}
+                    
                     {img.status === 'pending' && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-xs text-slate-400">
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-xs text-slate-400 font-bold">
                         ⏳ 等待
                       </div>
                     )}
                     {img.status === 'done' && (
-                      <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                      <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow font-bold">
                         ✓
                       </div>
                     )}
@@ -759,7 +795,6 @@ function App() {
             )}
           </main>
 
-          {/* 🌟 廣告版位：網頁底部壓軸橫幅 */}
           <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
             <AdBanner slotId="bottom-banner-ad" />
           </div>
