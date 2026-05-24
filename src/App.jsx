@@ -28,16 +28,15 @@ function App() {
 
   const [images, setImages] = useState([]);
   const [activeImageId, setActiveImageId] = useState(null);
-  
-  // 💎 將 activeImage 移到最上方，讓所有的 useEffect 都能提早監聽它的狀態
+
+  // 取得當前選取的圖片物件
   const activeImage = images.find(img => img.id === activeImageId);
 
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
-
   const [processStep, setProcessStep] = useState('');
   const [processProgress, setProcessProgress] = useState(0);
 
-  const [sliderPos, setSliderPos] = useState(50);
+  const [sliderPos, setSliderPos] = useState(0);
   const [autoSlider, setAutoSlider] = useState(true);
 
   // 🖌️ 橡皮擦功能專用 State
@@ -54,36 +53,16 @@ function App() {
   const siteUrl = 'https://ai-background-remover-three.vercel.app/';
 
   // =========================
-  // 💎 動畫觸發引擎：當切換圖片，或當前圖片剛完成去背時觸發
+  // 切換圖片或完成去背時的邏輯
   // =========================
   useEffect(() => {
     setIsEraserMode(false);
     
-    // 如果這張圖片是去背完成的狀態，就重置滑桿並啟動揭曉動畫
     if (activeImage && activeImage.status === 'done') {
-      setSliderPos(0);     // 從 0% (全原圖) 開始
-      setAutoSlider(true); // 啟動自動掃描特效
+      setSliderPos(0);
+      setAutoSlider(true);
     }
-  }, [activeImageId, activeImage?.status]); // 監聽 ID 切換與狀態變化
-
-  // =========================
-  // 💎 60fps 絲滑揭曉特效 (Auto slider animation)
-  // =========================
-  useEffect(() => {
-    if (!autoSlider || isEraserMode) return;
-    
-    const interval = setInterval(() => {
-      setSliderPos(prev => {
-        if (prev >= 100) {
-          setAutoSlider(false); // 跑到 100% 後自動停止，定格在去背成果
-          return 100;
-        }
-        return prev + 1.5; // 動畫推進速度，數字越大越快
-      });
-    }, 16); // 16ms 大約是 60fps，視覺上會非常滑順
-    
-    return () => clearInterval(interval);
-  }, [autoSlider, isEraserMode]);
+  }, [activeImageId, activeImage?.status]);
 
   // =========================
   // 總體進度計算
@@ -116,7 +95,26 @@ function App() {
   ];
 
   // =========================
-  // Init AI
+  // 💎 60fps 滑順揭曉動畫 (Auto slider animation)
+  // =========================
+  useEffect(() => {
+    if (!autoSlider || isEraserMode) return;
+    
+    const interval = setInterval(() => {
+      setSliderPos(prev => {
+        if (prev >= 100) {
+          setAutoSlider(false);
+          return 100;
+        }
+        return prev + 1.5; 
+      });
+    }, 16); 
+    
+    return () => clearInterval(interval);
+  }, [autoSlider, isEraserMode]);
+
+  // =========================
+  // Init AI (啟用 Web Worker)
   // =========================
 
   useEffect(() => {
@@ -542,7 +540,6 @@ function App() {
   const cursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2" style="filter: drop-shadow(0 0 1px black);"/></svg>`;
   const cursorUrl = `url("data:image/svg+xml;utf8,${encodeURIComponent(cursorSvg)}") ${brushSize/2} ${brushSize/2}, auto`;
 
-
   // =========================
   // 樣式常數
   // =========================
@@ -715,7 +712,7 @@ function App() {
             </div>
           )}
 
-          {/* Main Upload / Editor Area */}
+          {/* 🌟🌟🌟 Main Upload / Editor Area (核心功能區塊) 🌟🌟🌟 */}
           <main className="flex flex-col gap-6">
             <div
               onDrop={handleDrop}
@@ -858,34 +855,43 @@ function App() {
                                 去背後 (成果) ➡️
                               </div>
 
-                              <img
-                                src={activeImage.processedUrl}
-                                className="absolute max-w-[90%] max-h-[90%] object-contain drop-shadow-2xl pointer-events-none"
-                                alt={`去背完成成果 - ${activeImage.name}`}
-                              />
-                              <div
-                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                                style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
-                              >
+                              <div className="relative w-full h-full flex items-center justify-center">
+                                {/* 底層：先放原始圖 (Before) */}
                                 <img
                                   src={activeImage.originalUrl}
-                                  className="absolute max-w-[90%] max-h-[90%] object-contain"
-                                  alt={`去背前原圖 - ${activeImage.name}`}
+                                  className="absolute max-w-[90%] max-h-[90%] object-contain pointer-events-none"
+                                  alt="去背前原圖"
+                                />
+                                
+                                {/* 上層 (被裁切)：放去背完成圖 (After) */}
+                                <div
+                                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                                >
+                                  <img
+                                    src={activeImage.processedUrl}
+                                    className="absolute max-w-[90%] max-h-[90%] object-contain pointer-events-none"
+                                    alt="去背後成果"
+                                  />
+                                </div>
+
+                                {/* 滑桿線 */}
+                                <div
+                                  className="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)] pointer-events-none"
+                                  style={{ left: `${sliderPos}%` }}
+                                />
+
+                                {/* 透明滑桿控制器 */}
+                                <input
+                                  type="range" min="0" max="100" value={sliderPos}
+                                  onChange={e => {
+                                    setAutoSlider(false);
+                                    setSliderPos(e.target.value);
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-ew-resize z-20"
+                                  title="拖曳以比較去背前後差異"
                                 />
                               </div>
-                              <div
-                                className="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)] pointer-events-none"
-                                style={{ left: `${sliderPos}%` }}
-                              />
-                              <input
-                                type="range" min="0" max="100" value={sliderPos}
-                                onChange={e => {
-                                  setAutoSlider(false);
-                                  setSliderPos(e.target.value);
-                                }}
-                                className="absolute inset-0 opacity-0 cursor-ew-resize"
-                                title="拖曳以比較去背前後差異"
-                              />
                             </>
                           )}
                         </div>
@@ -963,7 +969,12 @@ function App() {
                 )
               )}
             </div>
-
+            {/* 🌟 廣告版位：批次處理等待區 */}
+            {images.length > 0 && !isAllDone && (
+              <div className="w-full bg-slate-900/40 rounded-2xl border border-slate-800/50 p-2 mb-2 overflow-hidden">
+                <AdBanner slotId="processing-middle-ad" />
+              </div>
+            )}
             {/* Bottom Gallery Grid */}
             {images.length > 0 && (
               <div className="bg-slate-900/70 border border-slate-700 rounded-3xl p-4 overflow-x-auto flex gap-4 items-center">
@@ -1016,29 +1027,96 @@ function App() {
               </div>
             )}
           </main>
+          {/* 🌟🌟🌟 核心功能區塊 結束 🌟🌟🌟 */}
 
-          <section className="w-full mt-16 mb-8 bg-slate-900/40 rounded-3xl border border-slate-800 p-8 md:p-10 text-left relative overflow-hidden">
-            <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-8 text-center relative z-10">為什麼選擇我們的免費 AI 線上去背工具？</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
-                <div className="text-4xl mb-4">📸</div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">證件照去背與換底色</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">自己在家拍大頭照，不用花錢去相館！透過我們的 AI 技術，一鍵完成<strong>證件照去背</strong>，並提供多種背景顏色模板，輕鬆實現<strong>證件照換底色</strong>（如藍底、白底、紅底），滿足護照、履歷、簽證等各式需求。</p>
+
+          {/* 🌟🌟🌟 5 個 SEO Landing Page 區塊 (網格卡片設計) 🌟🌟🌟 */}
+          <section className="w-full mt-16 mb-8 text-left relative z-10 flex flex-col gap-8">
+            <div className="text-center mb-4">
+              <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-4 inline-block relative">
+                ✨ AI 魔法去背，幫你解決所有煩惱
+                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400/0 via-emerald-400/50 to-cyan-400/0"></div>
+              </h2>
+            </div>
+
+            {/* 第一排：證件照 & 電商 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* SEO 1: 證件照 */}
+              <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-700/80 hover:border-emerald-500/50 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div className="text-4xl mb-5 drop-shadow-md">📸</div>
+                <h3 className="text-2xl font-black text-slate-100 mb-4">證件照去背與換底色</h3>
+                <p className="text-slate-300 leading-relaxed mb-4">
+                  自己在家拍大頭照，不用花錢去相館！透過我們的 AI 技術，一鍵完成<strong>證件照去背</strong>，並提供多種背景顏色模板，輕鬆實現<strong>證件照換底色</strong>（如藍底、白底、紅底）。
+                </p>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> 護照、身份證白底輕鬆換</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> 履歷照、健保卡藍底一鍵搞定</li>
+                </ul>
               </div>
-              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
-                <div className="text-4xl mb-4">🛍️</div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">電商產品圖去背</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">網拍賣家必備神器！無論是服飾、美妝還是 3C 產品，快速進行<strong>電商產品圖去背</strong>與<strong>去白底</strong>。完美去除雜亂背景，讓商品凸顯焦點，提升網店轉換率，製作高質感的商品去背圖從未如此簡單。</p>
+
+              {/* SEO 2: 電商產品圖 */}
+              <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-700/80 hover:border-cyan-500/50 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.1)] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div className="text-4xl mb-5 drop-shadow-md">🛍️</div>
+                <h3 className="text-2xl font-black text-slate-100 mb-4">電商產品圖去背</h3>
+                <p className="text-slate-300 leading-relaxed mb-4">
+                  網拍賣家必備神器！無論是服飾、美妝還是 3C 產品，快速進行<strong>電商產品圖去背</strong>與<strong>去白底</strong>。完美去除雜亂背景，讓商品凸顯焦點。
+                </p>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span> 提升網店轉換率，專業度加分</li>
+                  <li className="flex items-center gap-2"><span className="text-cyan-500">✓</span> 邊緣平滑處理，告別粗糙白邊</li>
+                </ul>
               </div>
-              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
-                <div className="text-4xl mb-4">🎨</div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">設計師與社群小編</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">不用再辛苦開啟 Photoshop 使用鋼筆工具！支援精細的髮絲邊緣處理，快速產出透明背景 PNG 檔。無論是製作 YouTube 縮圖、IG 限時動態，還是 LINE 貼圖，我們的<strong>免費去背</strong>工具都能大幅提升您的工作效率。</p>
+            </div>
+
+            {/* 第二排：設計師與社群小編 (完美復刻截圖的視覺排版) */}
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 p-8 md:p-10 rounded-3xl border border-slate-700/80 hover:border-emerald-500/50 transition-all shadow-xl relative overflow-hidden group">
+              <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-colors"></div>
+              <h3 className="text-2xl md:text-3xl font-black text-slate-100 mb-4 relative z-10">🎨 釋放生產力：專為設計師與小編打造的去背神器</h3>
+              <p className="text-slate-300 text-lg leading-relaxed mb-6 relative z-10">
+                每天都要製作 YouTube 縮圖、IG 限動海報或 LINE 貼圖？別再浪費時間在 Photoshop 裡慢慢拉鋼筆工具了！
+              </p>
+              <ul className="space-y-4 text-slate-300 relative z-10">
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 font-bold mt-1">✓</span> 
+                  <div><strong className="text-slate-200 block">極致 60fps 滑桿對比：</strong>圖片處理完成後，提供無比絲滑的「去背前後比較滑桿」，讓您一眼檢視去背品質。</div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 font-bold mt-1">✓</span> 
+                  <div><strong className="text-slate-200 block">進階手動橡皮擦：</strong>若 AI 偶爾不小心切掉了需要的物件？隨時切換至「手動擦除」模式，自由調整筆刷修補細節。</div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 font-bold mt-1">✓</span> 
+                  <div><strong className="text-slate-200 block">一鍵複製與打包：</strong>支援直接複製透明 PNG 至剪貼簿，也可在批次處理完畢後一鍵打包下載 ZIP 檔。</div>
+                </li>
+              </ul>
+            </div>
+
+            {/* 第三排：批次處理 & 完全免費 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* SEO 4: 批次處理 */}
+              <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-700/80 hover:border-amber-500/50 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(245,158,11,0.1)] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div className="text-4xl mb-5 drop-shadow-md">⚡</div>
+                <h3 className="text-2xl font-black text-slate-100 mb-4">全自動免費批次去背</h3>
+                <p className="text-slate-300 leading-relaxed mb-4">
+                  手邊有幾十張活動照片需要處理？一張張弄絕對會崩潰。全選多張圖片拖曳進來，系統會自動排隊運算，完成後還能<strong>一鍵打包下載 ZIP</strong>，效率瞬間翻倍！
+                </p>
+              </div>
+
+              {/* SEO 5: AI 去背神器 / 隱私安全 */}
+              <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-700/80 hover:border-blue-500/50 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div className="text-4xl mb-5 drop-shadow-md">🛡️</div>
+                <h3 className="text-2xl font-black text-slate-100 mb-4">100% 免費、安全護隱私</h3>
+                <p className="text-slate-300 leading-relaxed mb-4">
+                  完全免費且<strong>免登入</strong>即可使用。我們採用最先進的 WebAssembly 前端運算技術，圖片只在你的瀏覽器中處理，<strong>絕對不會上傳到雲端伺服器</strong>，私密照片不怕外流！
+                </p>
               </div>
             </div>
           </section>
+          {/* 🌟🌟🌟 5 個 SEO Landing Page 區塊 結束 🌟🌟🌟 */}
 
           <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
             <AdBanner slotId="bottom-banner-ad" />

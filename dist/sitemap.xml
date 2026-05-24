@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <!-- 網站主首頁 (根目錄) -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- ① 首頁 / 主關鍵字 -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/remove-background-free</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ② 英文流量 -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/ai-background-remover-online</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ③ 商業流量 -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/transparent-png-maker</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- ④ 長尾流量 -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/photo-background-removal-tool</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- ⑤ B2B / 電商流量 -->
+  <url>
+    <loc>https://ai-background-remover-three.vercel.app/bulk-background-removal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

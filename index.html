@@ -2,56 +2,120 @@
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- 響應式 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- 🔍 主標題 (對應主關鍵字與長尾關鍵字，字數控制在 Google 顯示範圍內) -->
-    <title>免費 AI 線上去背工具 | 一鍵自動照片去背、批次精準去白底</title>
-    
-    <!-- 📝 網站描述 (涵蓋商業流量與長尾流量，提高點擊率) -->
-    <meta name="description" content="完全免費的 AI 線上去背神器！免登入即可一鍵自動移除圖片背景、製作透明背景 PNG。支援批次處理大量商品照、證件照去白底，完美保留髮絲細節，瀏覽器打開即用。" />
-    
-    <!-- 🏷️ 關鍵字 (整合 5 大 SEO 核心關鍵字，中英文全包) -->
-    <meta name="keywords" content="去背, 線上去背, AI去背, 免費去背, 去白底, 批次去背, 透明背景 PNG, background remover, remove bg, ai background remover online, transparent png maker, photo background removal tool, bulk background removal" />
-    
-    <!-- 🔗 標準網址 (告訴 Google 這是首頁標準連結，未來買 .com 記得改這裡) -->
-    <link rel="canonical" href="https://ai-background-remover-three.vercel.app/" />
 
-    <!-- 📱 Open Graph (Facebook、Line、Discord 等社群分享用) -->
-    <meta property="og:title" content="免費 AI 線上去背工具 | 一鍵自動照片去背" />
-    <meta property="og:description" content="完全免費、一鍵自動移除圖片背景！精準去白底並支援批次處理，完美保留髮絲細節，瀏覽器打開即用。" />
+    <!-- SEO Title -->
+    <title>
+      免費 AI 線上去背工具 | 一鍵自動照片去背、批次精準去白底
+    </title>
+
+    <!-- SEO Description -->
+    <meta
+      name="description"
+      content="完全免費的 AI 線上去背神器！免登入即可一鍵自動移除圖片背景、製作透明背景 PNG。支援批次處理大量商品照、證件照去白底，完美保留髮絲細節，瀏覽器打開即用。"
+    />
+
+    <!-- SEO Keywords -->
+    <meta
+      name="keywords"
+      content="去背, 線上去背, AI去背, 免費去背, 去白底, 批次去背, 透明背景 PNG, background remover, remove bg, ai background remover online, transparent png maker, photo background removal tool, bulk background removal"
+    />
+
+    <!-- Canonical -->
+    <link
+      rel="canonical"
+      href="https://ai-background-remover-three.vercel.app/"
+    />
+
+    <!-- Robots -->
+    <meta name="robots" content="index, follow" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta
+      property="og:title"
+      content="免費 AI 線上去背工具 | 一鍵自動照片去背"
+    />
+
+    <meta
+      property="og:description"
+      content="完全免費、一鍵自動移除圖片背景！精準去白底並支援批次處理，完美保留髮絲細節，瀏覽器打開即用。"
+    />
+
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://ai-background-remover-three.vercel.app/" />
-    <!-- 💡 建議：未來可以做一張 1200x630 的預覽圖放在 public 資料夾，並解除下方註解 -->
-    <!-- <meta property="og:image" content="https://ai-background-remover-three.vercel.app/og-image.jpg" /> -->
 
-    <!-- 🤖 結構化資料 (Schema.org) - 明確告知搜尋引擎這是一個免費工具軟體，並列出核心功能 -->
+    <meta
+      property="og:url"
+      content="https://ai-background-remover-three.vercel.app/"
+    />
+
+    <!-- 建議未來加入 -->
+    <!--
+    <meta
+      property="og:image"
+      content="https://ai-background-remover-three.vercel.app/og-image.jpg"
+    />
+    -->
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta
+      name="twitter:title"
+      content="免費 AI 線上去背工具 | AI Background Remover"
+    />
+
+    <meta
+      name="twitter:description"
+      content="免費 AI 去背神器，支援批次去背與透明 PNG 輸出。"
+    />
+
+    <!-- Google AdSense -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5692275742295433"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- 結構化資料 -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "免費 AI 線上去背工具 (Free AI Background Remover)",
-      "url": "https://ai-background-remover-three.vercel.app/",
-      "description": "完全免費的 AI 線上去背工具，提供一鍵自動移除圖片背景、製作透明 PNG 及批次處理功能。",
-      "applicationCategory": "DesignApplication, UtilitiesApplication",
-      "operatingSystem": "All",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "TWD"
-      },
-      "featureList": [
-        "免費 AI 線上去背 (Remove background free)",
-        "AI 英文版去背 (AI background remover online)",
-        "透明背景 PNG 製作 (Transparent PNG maker)",
-        "專業照片去背 (Photo background removal tool)",
-        "批次圖片去背 (Bulk background removal)"
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "免費 AI 線上去背工具 (Free AI Background Remover)",
+        "url": "https://ai-background-remover-three.vercel.app/",
+        "description": "完全免費的 AI 線上去背工具，提供一鍵自動移除圖片背景、製作透明 PNG 及批次處理功能。",
+        "applicationCategory": [
+          "DesignApplication",
+          "UtilitiesApplication"
+        ],
+        "operatingSystem": "All",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "TWD"
+        },
+        "featureList": [
+          "免費 AI 線上去背 (Remove background free)",
+          "AI 英文版去背 (AI background remover online)",
+          "透明背景 PNG 製作 (Transparent PNG maker)",
+          "專業照片去背 (Photo background removal tool)",
+          "批次圖片去背 (Bulk background removal)"
+        ]
+      }
     </script>
   </head>
+
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
