@@ -40,6 +40,9 @@ function App() {
   const modelRef = useRef(null);
   const processorRef = useRef(null);
   const transformersRef = useRef(null);
+  
+  // 網址常數 (用於分享功能)
+  const siteUrl = 'https://ai-background-remover-three.vercel.app/';
 
   // =========================
   // 總體進度計算
@@ -107,8 +110,6 @@ function App() {
         env.allowLocalModels = false;
         env.backends.onnx.wasm.numThreads = 4;
         
-        // 💎 核心修復：強制開啟 Web Worker (proxy=true) 
-        // 這樣 AI 運算就會在背景執行，完全不會卡住使用者的操作畫面！
         env.backends.onnx.wasm.proxy = true; 
         
         env.backends.onnx.wasm.wasmPaths =
@@ -190,8 +191,6 @@ function App() {
           const data = imgData.data;
 
           for (let y = 0; y < canvas.height; y++) {
-            // 💎 核心修復：每處理 50 行像素，強迫瀏覽器休息 1 毫秒
-            // 這能確保遇到超大圖片時，網頁依舊滑順不卡頓
             if (y % 50 === 0) await yieldToBrowser(1); 
             
             for (let x = 0; x < canvas.width; x++) {
@@ -239,8 +238,6 @@ function App() {
         )
       );
 
-      // 💎 核心修復：給予瀏覽器 300 毫秒的緩衝時間
-      // 確保使用者的「點擊事件」能在切換圖片的縫隙中完美觸發
       await new Promise(r => setTimeout(r, 300));
 
       try {
@@ -378,7 +375,7 @@ function App() {
   };
 
   // =========================
-  // 透明背景斜線底圖案 (Checkerboard) 
+  // 透明背景斜線底圖案
   // =========================
   const checkeredBackgroundStyle = {
     backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
@@ -387,9 +384,6 @@ function App() {
     backgroundColor: '#ffffff'
   };
 
-  // =========================
-  // 決定預覽背景樣式
-  // =========================
   const getBackgroundStyle = (bgColor) => {
     if (bgColor === 'transparent') {
       return checkeredBackgroundStyle;
@@ -403,24 +397,24 @@ function App() {
   const activeImage = images.find(img => img.id === activeImageId);
 
   // =========================
-  // SEO Meta 標籤設定 (react-helmet-async)
+  // SEO Meta 標籤設定
   // =========================
   const seoTags = (
     <Helmet>
       <title>免費 AI 線上去背工具 | 一鍵自動照片去背、免登入精準去白底</title>
       <meta name="description" content="完全免費、免登入的 AI 線上去背神器！一鍵自動移除圖片背景、精準去白底，完美保留髮絲細節。適合電商商品照、證件照與社群頭貼優化，瀏覽器打開即用。" />
-      <meta name="keywords" content="去背, 線上去背, AI去背, 免費去背, 照片去背, 去白底, background remover, remove bg" />
-      <link rel="canonical" href="https://ai-background-remover-three.vercel.app/" />
+      <meta name="keywords" content="去背, 線上去背, AI去背, 免費去背, 照片去背, 去白底, 證件照去背, 證件照換底色, 電商產品圖去背, background remover, remove bg" />
+      <link rel="canonical" href={siteUrl} />
       <meta property="og:title" content="免費 AI 線上去背工具 | 一鍵自動照片去背、免登入精準去白底" />
       <meta property="og:description" content="完全免費、一鍵自動移除圖片背景！精準去白底，完美保留髮絲細節，瀏覽器打開即用。" />
       <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://ai-background-remover-three.vercel.app/" />
+      <meta property="og:url" content={siteUrl} />
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebApplication",
           "name": "免費 AI 線上去背工具",
-          "url": "https://ai-background-remover-three.vercel.app/",
+          "url": siteUrl,
           "description": "完全免費的 AI 線上去背工具，一鍵自動移除圖片背景、精準去白底。",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "All"
@@ -471,6 +465,33 @@ function App() {
             <p className="text-slate-300 text-base md:text-lg mb-6">
               不用 Photoshop，上傳多張圖片就能在背景默默去背 💖
             </p>
+
+            {/* 🌟 實用功能：社群分享按鈕 */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <button 
+                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, '_blank')}
+                className="px-4 py-2 bg-[#1877F2]/20 border border-[#1877F2]/50 text-[#1877F2] hover:bg-[#1877F2] hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                分享到 FB
+              </button>
+              <button 
+                onClick={() => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(siteUrl)}`, '_blank')}
+                className="px-4 py-2 bg-[#06C755]/20 border border-[#06C755]/50 text-[#06C755] hover:bg-[#06C755] hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.55 8.845 8.365 9.582.327.071.773.226.887.514.103.262.066.671.031.933-.04.303-.258 1.547-.314 1.828-.068.341.31.336.561.168.21-.137 1.957-1.42 2.682-1.983.3-.232.735-.411 1.258-.465h.005c.835.127 1.704.195 2.593.195 6.617 0 12-4.369 12-9.738zm-15.011 3.09c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.388h2.326c.295 0 .533.238.533.533s-.238.533-.533.533h-2.86zm5.836 0c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.921c0 .295-.238.533-.533.533zm3.766 0c-.295 0-.533-.238-.533-.533v-2.31l-2.072 2.709c-.066.086-.166.134-.27.134-.012 0-.024-.001-.036-.002-.116-.011-.219-.079-.272-.181-.052-.102-.057-.223-.012-.33l.01-.023v-2.852c0-.295.238-.533.533-.533s.533.238.533.533v2.31l2.072-2.709c.066-.086.166-.134.27-.134.012 0 .024.001.036.002.116.011.219.079.272.181.052.102.057.223.012.33l-.01.023v2.852c0 .295-.238.533-.533.533z"/></svg>
+                分享到 LINE
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(siteUrl);
+                  alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                }}
+                className="px-4 py-2 bg-slate-700/50 border border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
+              >
+                📋 複製連結 (IG 分享)
+              </button>
+            </div>
 
             {!ready && !error && (
               <div className="mt-6 max-w-md mx-auto bg-slate-800/70 p-5 rounded-2xl border border-slate-700">
@@ -699,11 +720,11 @@ function App() {
                             </div>
                           )}
                           
-                             {activeImage.status === 'pending' && (
-                           <div className="text-center bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-xl border border-slate-600 text-slate-100 text-sm font-bold shadow-[0_0_15px_rgba(0,0,0,0.5)] tracking-wide">
-                          ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
+                          {activeImage.status === 'pending' && (
+                            <div className="text-center bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-xl border border-slate-600 text-slate-100 text-sm font-bold shadow-[0_0_15px_rgba(0,0,0,0.5)] tracking-wide">
+                              ⏳ 排隊等待中...剩餘圖片處理完後會自動解鎖
                             </div>
-                         )}
+                          )}
                         </div>
                       )}
                     </div>
@@ -749,7 +770,6 @@ function App() {
                       alt={img.status === 'done' ? `已完成去背縮圖 - ${img.name}` : `排隊中圖片縮圖 - ${img.name}`}
                     />
                     
-                    {/* 💎 核心修復：在下方的列表縮圖直接顯示進度 % 數 */}
                     {img.status === 'processing' && (
                       <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-[1px]">
                         <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mb-1.5" />
@@ -794,6 +814,46 @@ function App() {
               </div>
             )}
           </main>
+
+          {/* 🌟 實用功能：SEO 與應用情境介紹區塊 (完美融入深色科技風) */}
+          <section className="w-full mt-16 mb-8 bg-slate-900/40 rounded-3xl border border-slate-800 p-8 md:p-10 text-left relative overflow-hidden">
+            {/* 裝飾光暈 */}
+            <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-8 text-center relative z-10">
+              為什麼選擇我們的免費 AI 線上去背工具？
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+              {/* 應用情境 1 */}
+              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
+                <div className="text-4xl mb-4">📸</div>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">證件照去背與換底色</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  自己在家拍大頭照，不用花錢去相館！透過我們的 AI 技術，一鍵完成<strong>證件照去背</strong>，並提供多種背景顏色模板，輕鬆實現<strong>證件照換底色</strong>（如藍底、白底、紅底），滿足護照、履歷、簽證等各式需求。
+                </p>
+              </div>
+
+              {/* 應用情境 2 */}
+              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
+                <div className="text-4xl mb-4">🛍️</div>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">電商產品圖去背</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  網拍賣家必備神器！無論是服飾、美妝還是 3C 產品，快速進行<strong>電商產品圖去背</strong>與<strong>去白底</strong>。完美去除雜亂背景，讓商品凸顯焦點，提升網店轉換率，製作高質感的商品去背圖從未如此簡單。
+                </p>
+              </div>
+
+              {/* 應用情境 3 */}
+              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/80 hover:border-emerald-500/50 transition-colors shadow-lg hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]">
+                <div className="text-4xl mb-4">🎨</div>
+                <h3 className="text-xl font-bold text-slate-100 mb-3">設計師與社群小編</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  不用再辛苦開啟 Photoshop 使用鋼筆工具！支援精細的髮絲邊緣處理，快速產出透明背景 PNG 檔。無論是製作 YouTube 縮圖、IG 限時動態，還是 LINE 貼圖，我們的<strong>免費去背</strong>工具都能大幅提升您的工作效率。
+                </p>
+              </div>
+            </div>
+          </section>
 
           <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
             <AdBanner slotId="bottom-banner-ad" />
