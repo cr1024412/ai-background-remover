@@ -36,6 +36,7 @@ function App() {
   const [processStep, setProcessStep] = useState('');
   const [processProgress, setProcessProgress] = useState(0);
 
+  // 💎 修正：初始值改回 0 (在最左邊)
   const [sliderPos, setSliderPos] = useState(0);
   const [autoSlider, setAutoSlider] = useState(true);
 
@@ -59,7 +60,7 @@ function App() {
     setIsEraserMode(false);
     
     if (activeImage && activeImage.status === 'done') {
-      setSliderPos(0);
+      setSliderPos(0); // 💎 修正：重新整理時從最左邊開始
       setAutoSlider(true);
     }
   }, [activeImageId, activeImage?.status]);
@@ -102,11 +103,11 @@ function App() {
     
     const interval = setInterval(() => {
       setSliderPos(prev => {
-        if (prev >= 100) {
+        if (prev >= 100) { // 💎 修正：當滑桿到達 100 (最右邊) 時停止
           setAutoSlider(false);
           return 100;
         }
-        return prev + 1.5; 
+        return prev + 1.5; // 💎 修正：數字由小變大，達成由左往右滑
       });
     }, 16); 
     
@@ -856,22 +857,22 @@ function App() {
                               </div>
 
                               <div className="relative w-full h-full flex items-center justify-center">
-                                {/* 底層：先放原始圖 (Before) */}
+                                {/* 底層：去背完成圖 (透明背景，After) */}
                                 <img
-                                  src={activeImage.originalUrl}
+                                  src={activeImage.processedUrl}
                                   className="absolute max-w-[90%] max-h-[90%] object-contain pointer-events-none"
-                                  alt="去背前原圖"
+                                  alt="去背後成果"
                                 />
                                 
-                                {/* 上層 (被裁切)：放去背完成圖 (After) */}
+                                {/* 上層 (被裁切)：原始圖 (有背景，Before) */}
                                 <div
                                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                                  style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }} // 💎 修正：改成從左邊(Left)裁切
                                 >
                                   <img
-                                    src={activeImage.processedUrl}
+                                    src={activeImage.originalUrl}
                                     className="absolute max-w-[90%] max-h-[90%] object-contain pointer-events-none"
-                                    alt="去背後成果"
+                                    alt="去背前原圖"
                                   />
                                 </div>
 
