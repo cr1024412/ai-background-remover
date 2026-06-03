@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdBanner from './AdBanner';
 import JSZip from 'jszip';
@@ -8,12 +8,15 @@ const yieldToBrowser = (ms = 50) =>
   new Promise(resolve => setTimeout(resolve, ms));
 
 function App() {
-  const isMobile =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    ) ||
-    (navigator.platform === 'MacIntel' &&
-      navigator.maxTouchPoints > 1);
+  // 💎 修正：移到 useMemo，避免每次 render 都重新呼叫 navigator API
+  const isMobile = useMemo(
+    () =>
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+    []
+  );
 
   // =========================
   // State
@@ -23,6 +26,15 @@ function App() {
   const [error, setError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [downloadProgress, setDownloadProgress] = useState(0);
+
+  // 💎 新增：Toast 通知系統，取代阻塞式 alert()
+  const [toast, setToast] = useState(null);
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -313,7 +325,7 @@ function App() {
 
     const validFiles = Array.from(fileList).filter(file => file.type.startsWith('image/'));
     if (validFiles.length === 0) {
-      alert('請上傳圖片唷 💖');
+      showToast('請上傳圖片唷 💖', 'error');
       return;
     }
 
@@ -375,17 +387,27 @@ function App() {
   const handleDownloadAll = async () => {
     const doneImages = images.filter(img => img.status === 'done');
     if (doneImages.length === 0) {
-      alert('目前沒有可下載圖片 😢');
+      showToast('目前沒有可下載圖片 😢', 'error');
       return;
     }
-    const zip = new JSZip();
-    for (const img of doneImages) {
-      const response = await fetch(img.processedUrl);
-      const blob = await response.blob();
-      zip.file(`removed-${img.name}.png`, blob);
+    if (isDownloadingAll) return;
+    setIsDownloadingAll(true);
+    try {
+      const zip = new JSZip();
+      for (const img of doneImages) {
+        const response = await fetch(img.processedUrl);
+        const blob = await response.blob();
+        zip.file(`removed-${img.name}.png`, blob);
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'AI-Background-Removed.zip');
+      showToast('📦 打包下載完成！');
+    } catch (err) {
+      console.error(err);
+      showToast('❌ 打包失敗，請再試一次', 'error');
+    } finally {
+      setIsDownloadingAll(false);
     }
-    const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, 'AI-Background-Removed.zip');
   };
 
   const handleCopy = async imageObj => {
@@ -395,9 +417,9 @@ function App() {
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
       ]);
-      alert('✨ 已成功複製圖片！');
+      showToast('✨ 已成功複製圖片！');
     } catch {
-      alert('❌ 複製失敗');
+      showToast('❌ 複製失敗，請改用下載功能', 'error');
     }
   };
 
@@ -585,6 +607,15 @@ function App() {
     return (
       <HelmetProvider>
         {seoTags}
+        {toast && (
+          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-2xl font-bold text-white shadow-2xl border ${
+            toast.type === 'error'
+              ? 'bg-rose-600/90 border-rose-400'
+              : 'bg-emerald-600/90 border-emerald-400'
+          }`}>
+            {toast.msg}
+          </div>
+        )}
         <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
           <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 max-w-md text-center">
             <div className="text-6xl mb-5">📱</div>
@@ -604,11 +635,21 @@ function App() {
   return (
     <HelmetProvider>
       {seoTags}
+      {/* 💎 新增：Toast 通知 UI */}
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-2xl font-bold text-white shadow-2xl border transition-all animate-bounce-once ${
+          toast.type === 'error'
+            ? 'bg-rose-600/90 border-rose-400 shadow-rose-500/30'
+            : 'bg-emerald-600/90 border-emerald-400 shadow-emerald-500/30'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 overflow-hidden">
         <div className="max-w-7xl w-full">
           
           <div className="w-full bg-slate-900/40 rounded-xl border border-slate-800/50 mb-4 overflow-hidden">
-            <AdBanner slotId="top-banner-ad" />
+            <AdBanner slotId="6581609422" />
           </div>
 
           <header className="text-center py-6 relative z-20">
@@ -639,13 +680,13 @@ function App() {
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.55 8.845 8.365 9.582.327.071.773.226.887.514.103.262.066.671.031.933-.04.303-.258 1.547-.314 1.828-.068.341.31.336.561.168.21-.137 1.957-1.42 2.682-1.983.3-.232.735-.411 1.258-.465h.005c.835.127 1.704.195 2.593.195 6.617 0 12-4.369 12-9.738zm-15.011 3.09c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.388h2.326c.295 0 .533.238.533.533s-.238.533-.533.533h-2.86zm5.836 0c-.295 0-.533-.238-.533-.533v-3.921c0-.295.238-.533.533-.533s.533.238.533.533v3.921c0 .295-.238.533-.533.533zm3.766 0c-.295 0-.533-.238-.533-.533v-2.31l-2.072 2.709c-.066.086-.166.134-.27.134-.012 0-.024-.001-.036-.002-.116-.011-.219-.079-.272-.181-.052-.102-.057-.223-.012-.33l.01-.023v-2.852c0-.295.238-.533.533-.533s.533.238.533.533v2.31l2.072-2.709c.066-.086.166-.134.27-.134.012 0 .024.001.036.002.116.011.219.079.272.181.052.102.057.223.012.33l-.01.023v2.852c0 .295-.238.533-.533.533z"/></svg>
                 分享到 LINE
               </a>
-              {/* 💎 修正：加入 try/catch Fallback，防止在 HTTP 本地端測試時出錯罷工 */}
               <button 
                 onClick={() => {
                   try {
                     if (navigator.clipboard && window.isSecureContext) {
-                      navigator.clipboard.writeText(siteUrl);
-                      alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                      navigator.clipboard.writeText(siteUrl).then(() => {
+                        showToast('🔗 連結已複製！快去貼到 IG 限動或其他地方分享吧！');
+                      });
                     } else {
                       const textArea = document.createElement("textarea");
                       textArea.value = siteUrl;
@@ -657,10 +698,10 @@ function App() {
                       textArea.select();
                       document.execCommand('copy');
                       textArea.remove();
-                      alert('🔗 連結已成功複製！快去貼到 IG 限動或其他地方分享吧！');
+                      showToast('🔗 連結已複製！快去分享吧！');
                     }
                   } catch (err) {
-                    alert('❌ 複製失敗，請手動複製網址: ' + siteUrl);
+                    showToast('❌ 複製失敗，請手動複製網址: ' + siteUrl, 'error');
                   }
                 }}
                 className="px-4 py-2 bg-slate-700/50 border border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white rounded-full font-bold text-sm transition-all shadow-lg flex items-center gap-2"
@@ -724,15 +765,16 @@ function App() {
                   Sponsor Advertisement
                 </div>
                 <div className="w-full h-full flex items-center justify-center mt-6">
-                  <AdBanner slotId="all-done-massive-ad" />
+                  <AdBanner slotId="6581609422" />
                 </div>
               </div>
               
               <button
                 onClick={handleDownloadAll}
-                className="px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 font-black text-xl hover:scale-105 hover:shadow-[0_0_30px_rgba(52,211,153,0.4)] transition-all transform shadow-2xl w-full md:w-auto"
+                disabled={isDownloadingAll}
+                className={`px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 font-black text-xl hover:scale-105 hover:shadow-[0_0_30px_rgba(52,211,153,0.4)] transition-all transform shadow-2xl w-full md:w-auto ${isDownloadingAll ? 'opacity-60 cursor-wait' : ''}`}
               >
-                📦 立即打包下載全部 ({totalImages} 張)
+                {isDownloadingAll ? '⏳ 打包中...' : `📦 立即打包下載全部 (${totalImages} 張)`}
               </button>
             </div>
           )}
@@ -776,7 +818,7 @@ function App() {
                       </div>
 
                       {activeImage.status === 'done' && !isEraserMode && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 overflow-x-auto max-w-[calc(100%-260px)] pb-0.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
                           {backgroundTemplates.map(bg => (
                             <button
                               key={bg.name}
@@ -911,7 +953,7 @@ function App() {
                                   type="range" min="0" max="100" value={sliderPos}
                                   onChange={e => {
                                     setAutoSlider(false);
-                                    setSliderPos(e.target.value);
+                                    setSliderPos(Number(e.target.value));
                                   }}
                                   className="absolute inset-0 opacity-0 cursor-ew-resize z-20"
                                   title="拖曳以比較去背前後差異"
@@ -997,7 +1039,7 @@ function App() {
             {/* 🌟 廣告版位：批次處理等待區 */}
             {images.length > 0 && !isAllDone && (
               <div className="w-full bg-slate-900/40 rounded-2xl border border-slate-800/50 p-2 mb-2 overflow-hidden">
-                <AdBanner slotId="processing-middle-ad" />
+                <AdBanner slotId="6581609422" />
               </div>
             )}
             {/* Bottom Gallery Grid */}
@@ -1045,8 +1087,8 @@ function App() {
                 </label>
                 
                 {!isAllDone && (
-                  <button onClick={handleDownloadAll} className="ml-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 font-black hover:scale-105 transition-all shadow-2xl flex-shrink-0">
-                    📦 打包下載
+                  <button onClick={handleDownloadAll} disabled={isDownloadingAll} className={`ml-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 font-black hover:scale-105 transition-all shadow-2xl flex-shrink-0 ${isDownloadingAll ? 'opacity-60 cursor-wait' : ''}`}>
+                    {isDownloadingAll ? '⏳ 打包中...' : '📦 打包下載'}
                   </button>
                 )}
               </div>
@@ -1144,7 +1186,7 @@ function App() {
           {/* 🌟🌟🌟 5 個 SEO Landing Page 區塊 結束 🌟🌟🌟 */}
 
           <div className="mt-8 w-full bg-slate-900/40 rounded-xl border border-slate-800/50 overflow-hidden">
-            <AdBanner slotId="bottom-banner-ad" />
+            <AdBanner slotId="6581609422" />
           </div>
         </div>
       </div>
